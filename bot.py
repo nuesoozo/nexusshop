@@ -10,8 +10,16 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
-WEBAPP_URL = os.getenv("https://nuesoozo.github.io/nexusshop/") # Ссылка на твой GitHub Pages
+ADMIN_ID_RAW = os.getenv("ADMIN_ID")
+
+# Проверка, чтобы бот не падал, если ID не задан
+if ADMIN_ID_RAW:
+    ADMIN_ID = int(ADMIN_ID_RAW)
+else:
+    ADMIN_ID = None
+
+# Ссылка на твой сайт прописана напрямую
+WEBAPP_URL = "https://nuesoozo.github.io/nexusshop/" 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -35,21 +43,23 @@ async def support_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = json.loads(update.effective_message.web_app_data.data)
     
-    if data['type'] == 'virts':
+    if data.get('type') == 'virts':
         title = f"Покупка виртов ({data['amount']} млн)"
         desc = f"Ник: {data['nick']}"
-        price = data['price']
-    elif data['type'] == 'cheat':
+        price = int(data['price'])
+    elif data.get('type') == 'cheat':
         title = f"Чит: {data['name']}"
         desc = "Цифровой товар"
-        price = data['price']
+        price = int(data['price'])
+    else:
+        return
 
     # Отправляем счет на оплату в Stars
     await context.bot.send_invoice(
         chat_id=update.effective_chat.id,
         title=title,
         description=desc,
-        payload=json.dumps(data), # Сохраняем данные в чеке
+        payload=json.dumps(data), 
         provider_token="", 
         currency="XTR", # XTR = Telegram Stars
         prices=[LabeledPrice(label=title, amount=price)]
@@ -64,12 +74,13 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     await update.message.reply_text("Оплата прошла успешно! Заказ передан в обработку.")
     
-    # Уведомление тебе в личку
-    username = update.effective_user.username or update.effective_user.id
-    await context.bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"НОВАЯ ПОКУПКА!\n\nДанные: {json.dumps(data, ensure_ascii=False)}\nПокупатель: @{username}"
-    )
+    # Уведомление тебе в личку (если ADMIN_ID задан)
+    if ADMIN_ID:
+        username = update.effective_user.username or update.effective_user.id
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"НОВАЯ ПОКУПКА!\n\nДанные: {json.dumps(data, ensure_ascii=False)}\nПокупатель: @{username}"
+        )
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
