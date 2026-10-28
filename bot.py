@@ -46,27 +46,15 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         return
 
-    # Создаём ссылку на оплату
-    invoice_link = await context.bot.create_invoice_link(
+    # Отправляем счет напрямую в чат бота с кнопкой оплаты
+    await context.bot.send_invoice(
+        chat_id=update.effective_chat.id,
         title=title,
         description=desc,
         payload=json.dumps(data),
         provider_token="",
         currency="XTR",
         prices=[LabeledPrice(label=title, amount=price)]
-    )
-    
-    # Возвращаем ссылку на сайт
-    await context.bot.answer_web_app_query(
-        web_app_query_id=update.effective_message.web_app_data.query_id,
-        result={
-            "type": "article",
-            "id": "1",
-            "title": "Оплата",
-            "input_message_content": {
-                "message_text": invoice_link
-            }
-        }
     )
 
 async def pre_checkout(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -76,13 +64,13 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     payment = update.message.successful_payment
     data = json.loads(payment.invoice_payload)
     
-    await update.message.reply_text("Оплата прошла успешно! Заказ передан в обработку.")
+    await update.message.reply_text("✅ Оплата прошла успешно! Заказ передан в обработку.")
     
     if ADMIN_ID:
         username = update.effective_user.username or update.effective_user.id
         await context.bot.send_message(
             chat_id=ADMIN_ID,
-            text=f"НОВАЯ ПОКУПКА!\n\nДанные: {json.dumps(data, ensure_ascii=False)}\nПокупатель: @{username}"
+            text=f"💰 НОВАЯ ПОКУПКА!\n\nДанные: {json.dumps(data, ensure_ascii=False)}\nПокупатель: @{username}"
         )
 
 def main():
