@@ -11,7 +11,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID"))
-WEBAPP_URL = os.getenv("WEBAPP_URL") # Ссылка на твой GitHub Pages
+WEBAPP_URL = os.getenv("https://nuesoozo.github.io/nexusshop/") # Ссылка на твой GitHub Pages
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
