@@ -335,13 +335,11 @@
             if(!nick) { alert("Введите игровой ник!"); return; }
 
             tg.sendData(JSON.stringify({ type: 'virts', nick: nick, amount: amount, price: price }));
-            tg.close();
         }
 
         function payCheat(name, price) {
             tg.sendData(JSON.stringify({ type: 'cheat', name: name, price: price }));
-            tg.close();
         }
     </script>
 </body>
-  </html>
+</html>
