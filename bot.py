@@ -11,15 +11,8 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID_RAW = os.getenv("ADMIN_ID")
-
-# Проверка, чтобы бот не падал, если ID не задан
-if ADMIN_ID_RAW:
-    ADMIN_ID = int(ADMIN_ID_RAW)
-else:
-    ADMIN_ID = None
-
-# Ссылка на твой сайт прописана напрямую
-WEBAPP_URL = "https://nuesoozo.github.io/nexusshop/" 
+ADMIN_ID = int(ADMIN_ID_RAW) if ADMIN_ID_RAW else None
+WEBAPP_URL = "https://nuesoozo.github.io/nexusshop/"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -39,7 +32,6 @@ async def support_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     await query.edit_message_text("Напишите свой вопрос или проблему. Мы ответим в скором времени.")
 
-# Ловим данные с сайта (Mini App)
 async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = json.loads(update.effective_message.web_app_data.data)
     
@@ -54,15 +46,27 @@ async def web_app_data(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         return
 
-    # Отправляем счет на оплату в Stars
-    await context.bot.send_invoice(
-        chat_id=update.effective_chat.id,
+    # Создаём ссылку на оплату
+    invoice_link = await context.bot.create_invoice_link(
         title=title,
         description=desc,
-        payload=json.dumps(data), 
-        provider_token="", 
-        currency="XTR", # XTR = Telegram Stars
+        payload=json.dumps(data),
+        provider_token="",
+        currency="XTR",
         prices=[LabeledPrice(label=title, amount=price)]
+    )
+    
+    # Возвращаем ссылку на сайт
+    await context.bot.answer_web_app_query(
+        web_app_query_id=update.effective_message.web_app_data.query_id,
+        result={
+            "type": "article",
+            "id": "1",
+            "title": "Оплата",
+            "input_message_content": {
+                "message_text": invoice_link
+            }
+        }
     )
 
 async def pre_checkout(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,7 +78,6 @@ async def successful_payment(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     await update.message.reply_text("Оплата прошла успешно! Заказ передан в обработку.")
     
-    # Уведомление тебе в личку (если ADMIN_ID задан)
     if ADMIN_ID:
         username = update.effective_user.username or update.effective_user.id
         await context.bot.send_message(
